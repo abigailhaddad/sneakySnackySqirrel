@@ -1,1 +1,1 @@
-# sneakySnackySqirrel
+# sneakySnackySquirrel
