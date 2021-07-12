@@ -27,8 +27,56 @@ def produceLose(playerBoard):
     # makes all your board values=0
     playerBoard = {x: 0 for x in playerBoard }
     return(playerBoard)
+
+def selectOne(missings):
+    selection="missing"
+    while selection not in missings:
+        print(f"You are missing the following colors {', '.join(missings)}.")
+        selection = input("Select one color to take:")
+    return(selection)
     
-def takeTurn(stateOfBoard, player):
+def selectTwo(missings):
+    selection1, selection2="missing", "missing"
+    while selection1 not in missings:
+        print(f"You are missing the following colors {', '.join(missings)}.")
+        selection1 = input("Select the first color to take:")
+    missings.remove(selection1)
+    while selection2 not in missings:
+        print(f"You are missing the following colors {', '.join(missings)}.")
+        selection2 = input("Select the second color to take:")
+    return([selection1, selection2])
+    
+def checkHuman(n):
+    peopleStatus=[]
+    for player in range(0,n):
+        selection="missing"
+        while selection not in ["HUMAN", "ROBOT"]:
+            selection = input(f"Is player {player} a HUMAN or a ROBOT?: ")
+            peopleStatus.append(selection)
+    return(peopleStatus)
+    
+def stealPerson(player, stateOfBoard, missings):
+    selectPlayer="missing"
+    selectColor="missing"
+    otherPlayers=list(stateOfBoard.keys())
+    otherPlayers.remove(player)
+    if len(stateOfBoard.keys())==1:
+        print("There are no other players to steal from.")
+        return("none", "none")
+    elif stealRobot(player, stateOfBoard, missings)[1]=="none":
+        print("No other players have a color you are missing.")
+        return("none", "none")
+    else:
+        while (selectPlayer not in otherPlayers) or (selectColor not in missings) or (stateOfBoard[selectPlayer][selectColor]!=1):
+            #print(stateOfBoard[selectPlayer][selectColor])
+            print(f"You are missing the following colors {', '.join(missings)}.")
+            print("The state of the board looks like this:")
+            print(stateOfBoard)
+            selectPlayer = int(input("Select a player to steal from:  "))
+            selectColor=input("Select a color to steal:  ")
+    return(selectColor, selectPlayer)
+                                                  
+def takeTurn(stateOfBoard, player, personStatus):
     playerBoard=stateOfBoard[player]
     colorList=makeColorList()
     spinResult=spin()
@@ -41,11 +89,23 @@ def takeTurn(stateOfBoard, player):
     elif spinResult=="lose":
         playerBoard = produceLose(playerBoard)
     elif (spinResult=="one") or (spinResult=="two" and len(missings)==1):
-        get=get+(random.sample(missings, 1))
+        #prompt if user play
+        if personStatus=="ROBOT":
+            get=get+(random.sample(missings, 1))
+        if personStatus=="HUMAN":
+            get=get+[selectOne(missings)]
     elif spinResult=="two":
-        get=get+random.sample(missings, 2)
+        #prompt if user play
+        if personStatus=="ROBOT":
+            get=get+random.sample(missings, 2)
+        if personStatus=="HUMAN":
+            get=get+selectTwo(missings)
     elif spinResult=="steal":
-        replace, playerTake=steal(player, stateOfBoard, missings)
+        #prompt if user play
+        if personStatus=="ROBOT":
+            replace, playerTake=stealRobot(player, stateOfBoard, missings)
+        if personStatus=="HUMAN":
+            replace, playerTake=stealPerson(player, stateOfBoard, missings)
         if playerTake!="none":
             get.append(replace)
             stateOfBoard[playerTake][get[0]]=0
@@ -89,7 +149,10 @@ def evaluateWin(state):
         else:
             pass
 
-def steal(player, stateOfBoard, missings):
+
+    
+
+def stealRobot(player, stateOfBoard, missings):
     #we are going to sort the other players by how well they're doing
     #and then steal from the one with the most items who also has an item we want
     biggestSum=0
@@ -109,10 +172,11 @@ def steal(player, stateOfBoard, missings):
 def main(n):
     # this runs one game until someone wins
     state=startState(n)
+    peopleStatus=checkHuman(n)
     turnNumber=0
     while evaluateWin(state)!="win":
         player=turnNumber % n
-        state=takeTurn(state, player)
+        state=takeTurn(state, player, peopleStatus[player])
         turnNumber=turnNumber+1
     print(f'Player {player} won on turn {turnNumber}')
     return(turnNumber, player)
@@ -135,7 +199,7 @@ def testIt(count):
     return(results)
         
 #results=testIt(10000)
-main(1)
+main(2)
 #testIt(100)
 
 """
